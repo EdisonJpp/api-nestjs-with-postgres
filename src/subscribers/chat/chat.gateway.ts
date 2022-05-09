@@ -20,6 +20,7 @@ import { MessageService } from './service/message.service';
 import { ConnectedUserService } from './service/connected-user.service';
 import { ConnectedUserModel } from './models/connected-user.model';
 import { RoomUserService } from './service/room-user.service';
+import { RoomUser } from './models/room-user.model';
 
 @WebSocketGateway({
   namespace: 'chat',
@@ -127,19 +128,11 @@ export class ChatGateway
   }
 
   @SubscribeMessage('addMessage')
-  async onAddMessage(
-    socket: Socket,
-    payload: { message: MessageModel; room: RoomModel },
-  ) {
-    const { message, room: rawNewRoom } = payload;
+  async onAddMessage(socket: Socket, payload: { message: MessageModel }) {
+    const { message } = payload;
 
-    if (rawNewRoom) {
-      const createdRoom: RoomModel = await this.roomService.createRoom(
-        rawNewRoom,
-        socket.data.user,
-      );
-
-      message['room'] = createdRoom;
+    if (!!message.room.id) {
+      message.room.users.push({ userId: socket.data.user.id } as RoomUser);
     }
 
     const createdMessage: MessageModel = await this.messageService.create({
